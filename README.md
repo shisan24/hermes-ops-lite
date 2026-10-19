@@ -24,6 +24,7 @@ python unit_retrieval.py     # 取回侦测端到端：8 项
 python stress_effect.py 300  # 压力：随机 300 轮 + 定点 + 并发 + 热路径
 python fuzz_rounds.py 51     # 模糊不变量：51 轮
 python analyze_ledger.py [savings.jsonl] [state.db]   # 收益表（只读）
+python budget_shadow.py     # 预算影子分析：收紧预算还能多省多少、风险在哪（只读）
 ```
 
 测试默认从仓库根目录找插件文件，不需要改路径。
@@ -131,6 +132,8 @@ Hermes 的大型工具结果几乎都是 JSON，换行被转义在字符串字�
 
 - 全局 `max_chars`，按工具覆盖：`skill_view` 6000、`skills_list` 4000、`session_search` 6000。
 - 错误结果走 `error_max_chars`（更大），不压太狠。
+- 收紧预算的余量很小：账本实测把预算压到 0.6 只多省约 6%，压到 0.4 约 14%，代价是头部标签更容易不够用。
+  想调整先用 `budget_shadow.py` 看数字，不要凭感觉改。
 
 ### 效果判定（1.5.0–1.5.2）
 
