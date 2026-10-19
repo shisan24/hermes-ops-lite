@@ -26,11 +26,22 @@ python analyze_ledger.py [savings.jsonl] [state.db]   # 收益表（只读）
 
 测试默认从仓库根目录找插件文件，不需要改路径。
 
-## 来源
+## 致谢与出处
 
-思路移植自 [dsh-ops](https://github.com/T-Auto/dsh-ops)（MIT AND Apache-2.0）的
-`capture` / `spill` / `result reference` 与 `Failure.effectState` 设计，代码是为 Hermes 的
-`transform_tool_result` 钩子独立实现的，未复制其代码。
+本项目是 [**dsh-ops**](https://github.com/T-Auto/dsh-ops)（作者 **T-Auto**，MIT AND Apache-2.0）的**思路移植**：
+不是它的分支，也没有复制它的代码。原项目是 DSH（DeepSeek Harness）的原生工具插件，
+这里按 Hermes 的 `transform_tool_result` 钩子重新实现。
+
+**建议先去看原仓库**，下面几处比这里做得更深：
+
+- `native/crates/ops-results`：有界输出的 capture → spill → `ref://` 引用与分页（带 contentHash、complete、omitted），比"截断"完整得多
+- `src/kernel/` 与 `Failure.effectState`：失败语义三态（none / applied / unknown）+ 按错误码写死的 `nextAction`
+- `src/modes/native/read-*.ts`：读取去重前后都用 lstat 复核（dev/ino/size/mtimeNs/ctimeNs），且只认未经改写的渲染结果
+- `AGENTS.md`：单文件 ≤1000 行、每条新行为一条断言、bench 永不裁决时间——工程纪律比功能更值得学
+
+引用它的数据时请注意口径：官方自测"比 Windows 原装标准模式省 97%"是**自报**，没有第三方复现。
+
+原项目 License 是 MIT AND Apache-2.0；本项目为独立实现的 MIT。
 
 ---
 
