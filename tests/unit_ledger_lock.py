@@ -5,6 +5,10 @@
 线程由进程内锁串行化（stress_effect.py 覆盖），这里只测进程之间：
 桌面后端、a2a 会话、cron 会同时往同一个 savings.jsonl 追加。
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util
 import json
 import multiprocessing as mp

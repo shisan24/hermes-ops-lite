@@ -5,6 +5,10 @@
 覆盖：预算与按工具上限、信封/数组/嵌套文档、BOM、保留键碰撞、取回提示与字段专档、
 配置校验（含深拷贝）、留档字节保真、自保不变量。
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util, json, pathlib, re, sys, tempfile
 
 B = sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).resolve().parent.parent / "bounding.py")

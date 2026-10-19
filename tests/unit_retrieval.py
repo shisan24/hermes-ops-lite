@@ -6,6 +6,10 @@
 然后：① 收敛一个大结果（应写 bounded 行 + 记住提示）② 模拟"按提示回读"
 ③ 断言账本出现对应 retrieve 行（留档/专档/原文件三条路径）④ 无关读取不得误记。
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util, json, pathlib, shutil, sys, tempfile, types
 
 SRC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).resolve().parent.parent))

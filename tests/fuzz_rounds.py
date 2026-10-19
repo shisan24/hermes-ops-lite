@@ -4,6 +4,10 @@
 不变量：①不得变长 ②原为合法 JSON 则输出每层可解析 ③信封键不丢、数组元素不丢
 ④留档路径真实存在且与原文逐字节一致 ⑤同输入两次结果一致 ⑥不抛异常
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util, json, pathlib, random, sys, tempfile
 
 B = sys.argv[3] if len(sys.argv) > 3 else str(pathlib.Path(__file__).resolve().parent.parent / "bounding.py")

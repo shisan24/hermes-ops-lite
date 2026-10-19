@@ -9,6 +9,10 @@
       近 7 天趋势。只读，不写任何东西。放大口径：每次收敛之后该会话还有多少次 assistant
       消息（= 还要重发多少遍这段缩短后的上下文），token ≈ 字符 / 3.6（下限估计）。
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import collections, datetime, json, pathlib, sqlite3, sys, time
 
 HOME = pathlib.Path.home() / "AppData/Local/hermes"

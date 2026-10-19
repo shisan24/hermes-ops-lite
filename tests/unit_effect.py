@@ -13,6 +13,10 @@
   ⑤ JSON 信封加 _ops_effect 键后仍可 json.loads，原有键一个不丢
   ⑥ 标注幂等
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util, json, pathlib, shutil, sys, tempfile, types
 
 SRC = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else str(pathlib.Path(__file__).resolve().parent.parent))

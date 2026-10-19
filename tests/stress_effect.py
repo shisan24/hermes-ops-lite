@@ -12,6 +12,10 @@
   ⑦ 并发下账本行不损坏、不丢行（O_APPEND 单次写）
   ⑧ 热路径成本：< 1ms/次（小结果），1MB 输入不爆内存
 """
+
+import sys as _sys
+if hasattr(_sys.stdout, "reconfigure"):
+    _sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 控制台代码页不保证 UTF-8
 import importlib.util
 import json
 import pathlib
