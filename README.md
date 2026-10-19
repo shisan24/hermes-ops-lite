@@ -196,39 +196,25 @@ Hermes 的大型工具结果几乎都是 JSON，换行被转义在字符串字�
 `/ops` 参数 fuzz、failover 属性模糊、5000 步窗口状态机爆破、配置倒挂、判决键集契约、
 本地错误边界、跨进程确定性。
 
-### 九轮（效果判定，2026-10-20）
+### 效果判定（1.5.0–1.5.2）
 
-从 dsh-ops 的 `Failure.effectState` 搬来第三条：**失败的写操作要回答「到底动了没有」**。
+失败的写操作标注 `none / applied / unknown` 并给出下一步。只标失败、只标写类与命令类工具；
+成功调用和只读工具不加任何字符。
 
-| 状态 | 判据（Hermes 真实报错文案） | 给模型的话 |
+| 状态 | 判据（Hermes 报错文案） | 结论 |
 |---|---|---|
-| `none` | 「Could not find a match for old_string」「The file was **NOT** modified」「permission denied」「invalid argument」 | 未发生写入；修正请求后可安全重试 |
-| `applied` | 「was modified but…」「written but…」「partially applied」 | 已产生变更；不要重试，先核验 |
-| `unknown` | 其余写错误，以及 `terminal`/`execute_code` 的超时、被杀、broken pipe | 效果未知；先核验目标再决定 |
+| `none` | Could not find a match / The file was NOT modified / permission denied / invalid argument | 未写入，修正后可重试 |
+| `applied` | was modified but… / written but… / partially applied | 已变更，不要重试，先核验 |
+| `unknown` | 其余写错误；命令工具的超时、被杀、broken pipe | 先核验再决定 |
 
-有意为之的三条边界：**只读工具不标**、**成功的写不标**、**shell 只标「被截断」不标「退出码非零」**
-（`grep` 找不到东西不该被写成 unknown，喊狼来了标签就废了）。JSON 信封里加 `_ops_effect` 键保持可解析，
-纯文本追加一行；开关 `effect_state`。
+JSON 信封里加 `_ops_effect` 键（保持可解析），纯文本追加一行；开关 `effect_state`。
 
-验证：`tests/unit_effect.py` 28 项（纯分类 11、标注形式 6、端到端 11）；
-回归 `unit_ops_lite.py` 21/21、`unit_retrieval.py` 8/8、模糊 51 轮全清。
+账本每条判定带 `evidence`：命中的短语，或 `no-pattern: <工具原话>`。`analyze_ledger.py` 直接可见。
 
-### 九轮附：压力测试（2026-10-20）
+边界与限制：只有失败才标；命令工具只在被截断时标，退出码非零不标。
+判定基于报错措辞，工具换文案时会退化为 `unknown`——保守方向，不会误判成 `none`。
 
-`tests/stress_effect.py`（300 轮随机攻击 + 定点 + 并发 + 热路径）抓出两个**真缺陷**：
-
-| 缺陷 | 实测 | 修法 |
-|---|---|---|
-| **并发丢行** | 8 线程 × 60 次追加 → 只落 **344/480** 行。Windows 的 `O_APPEND` 是按句柄模拟的：两个线程各自 seek 到同一末尾，后写覆盖先写 | 进程内 `_LEDGER_LOCK` 串行化；跨进程行为不变。修后 **480/480**，约 2,556 行/秒 |
-| **热路径放大** | 200 KB 错误文本分类 **1.7 ms**（`lower()` 复制全文）。换编译正则想省掉复制，反而 **26 ms**——CPython 对字面量交替是「每个位置试每个分支」 | 保留 lower+子串扫描，把两个实测量写进代码注释，避免下一个人再踩 |
-
-定点结果：1 MB 带结尾关键词 1.16 ms；65k 深嵌套 0.05 ms；成功结果里出现 `not modified` 不误标；
-已带 `_ops_effect` 不重复标；大错误结果（28 KB）既被收敛又保住标注。
-
-**账本自证（1.5.2）**：每条判定追加 `evidence`——命中的短语（`timed out`、`could not find a match`），
-没命中任何模式则写 `no-pattern: <工具原话前 80 字>`。`analyze_ledger.py` 打印最近 5 条。
-理由很实际：1.5.1 上线两小时出现过 1 次 `unknown`，账本只记了状态，事后查不出凭什么判的。
-旧记录没有这个字段，显示 `—`，不回溯补。
+并发与成本：账本追加串行化（8×60 并发全落）；200 KB 错误文本分类 < 2 ms。
 
 **版本 1.5.2**。
 
