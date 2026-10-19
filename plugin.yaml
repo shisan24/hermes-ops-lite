@@ -1,0 +1,7 @@
+name: ops-lite
+version: 1.5.2
+description: "Bound every tool result before it enters context: keep head/tail, spill the full text to disk, short-circuit unchanged repeats. /ops shows what it saved."
+author: Hermes Agent (dsh-ops port, local)
+requires_hermes: ">=0.21.5"
+provides_hooks:
+  - transform_tool_result
