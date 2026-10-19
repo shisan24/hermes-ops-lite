@@ -18,7 +18,7 @@ import json
 import os
 import threading
 import time
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -768,16 +768,78 @@ def annotate_effect(text: str, state: str) -> str:
     return f"{text.rstrip()}\n[ops-lite 效果：{state} · {next_step}]"
 
 
+_LOCK_WAIT_S = 5.0
+
+
+@contextmanager
+def _process_lock(lock_path: Path):
+    """Exclusive lock across processes on the ledger's ``.lock`` file.
+
+    Threads are already serialized by ``_LEDGER_LOCK``; this covers the other writers of the same
+    ledger — the desktop backend, an a2a session, a cron run. Best effort by design: if the lock
+    cannot be taken (odd filesystem, no permission), the row is still written, because losing a
+    statistic is better than losing the call.
+    """
+    handle = None
+    locked = False
+    try:
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        handle = open(lock_path, "a+b")
+        if os.name == "nt":
+            import msvcrt
+
+            deadline = time.monotonic() + _LOCK_WAIT_S
+            while True:
+                try:
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    locked = True
+                    break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        break
+                    time.sleep(0.005)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            locked = True
+    except Exception:
+        locked = False
+    try:
+        yield locked
+    finally:
+        try:
+            if locked and handle is not None:
+                if os.name == "nt":
+                    import msvcrt
+
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        except Exception:
+            pass
+        try:
+            if handle is not None:
+                handle.close()
+        except Exception:
+            pass
+
+
 def append_ledger(path: Path, row: dict[str, Any]) -> None:
     """Append one JSON line, atomically enough for concurrent writers.
 
     Text-mode ``open("a")`` emits the line in pieces on Windows, so two writers can interleave and
     a line disappears (measured: 20 concurrent appends produced 19 lines). One ``os.write`` of the
-    pre-encoded bytes under ``O_APPEND`` lands as a unit (attack round 12, 2026-10-19).
+    pre-encoded bytes lands as a unit. Threads are serialized in-process; other processes are
+    serialized by the ``.lock`` file beside the ledger.
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     blob = (json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8", "surrogatepass")
-    with _LEDGER_LOCK:
+    with _LEDGER_LOCK, _process_lock(path.with_name(path.name + ".lock")):
         for attempt in (0, 1):
             try:
                 handle = os.open(path, os.O_APPEND | os.O_CREAT | os.O_WRONLY | getattr(os, "O_BINARY", 0))

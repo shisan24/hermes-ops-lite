@@ -1,5 +1,7 @@
 # hermes-ops-lite
 
+[![ci](https://github.com/shisan24/hermes-ops-lite/actions/workflows/ci.yml/badge.svg)](https://github.com/shisan24/hermes-ops-lite/actions/workflows/ci.yml)
+
 Hermes Agent 的工具输出层插件：进上下文之前先收敛，长结果留档，重复读不重发，失败的写操作标出效果三态。
 
 ## 安装
@@ -123,7 +125,7 @@ Hermes 的大型工具结果几乎都是 JSON，换行被转义在字符串字�
 
 - 节省按实际返回长度计算，不虚报。
 - 取回率自动统计自 2026-10-19 起，更早的约 19% 是人工反查，两者不要混看。
-- 追加写入；进程内串行化，跨进程仍是尽力而为。
+- 追加写入；进程内用锁串行化，跨进程用账本旁的 `.lock` 文件串行化（取不到锁时仍写，不丢数据）。
 
 **预算**
 
@@ -150,7 +152,7 @@ JSON 信封里加 `_ops_effect` 键（保持可解析），纯文本追加一行
 
 并发与成本：账本追加串行化（8×60 并发全落）；200 KB 错误文本分类 < 2 ms。
 
-**版本 1.5.2**。
+**版本 1.5.3**。
 
 ## 收敛的结构性下限（别被数字误导）
 

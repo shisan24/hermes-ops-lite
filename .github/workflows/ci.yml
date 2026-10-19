@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: unit
+        run: |
+          python tests/unit_effect.py
+          python tests/unit_ops_lite.py
+          python tests/unit_retrieval.py
+          python tests/unit_ledger_lock.py
+      - name: properties
+        run: |
+          python tests/fuzz_rounds.py 51
+          python tests/stress_effect.py 300
